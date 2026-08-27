@@ -11,3 +11,12 @@ canvas {
     height: 100%;
     border: 2px solid blue;
 }
+
+.helper-text {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 16px;
+    color: #333;
+}
