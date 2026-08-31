@@ -14,32 +14,69 @@ let gameOver = false;
 let responseTime = 5;
 let timer = responseTime;
 let lastTime = null;
+let currentColorIndex = 0;
+const rainbowColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+let score = 0;
+let requiredColorCount = 0;
+let requiredColorSpawned = 0;
+let shotPlan = [];
+let shotIndex = 0;
 
 
-
-let colors = [
-    {
-        x: 0,
+function createColor(x, color) {
+    return {
+        x: x,
         y: 200,
         size: 50,
         speed: 2,
-        color: "red"
-    },
-    {
-        x: 150,
-        y: 200,
-        size: 50,
-        speed: 2,
-        color: "blue"
-    },
-    {
-        x: 300,
-        y: 200,
-        size: 50,
-        speed: 2,
-        color: "green"
+        color: color
+    };
+}
+
+function startColorWindow() {
+    requiredColorCount = Math.floor(Math.random() * 2) + 1;
+    requiredColorSpawned = 0;
+    shotIndex = 0;
+
+    shotPlan = Array(10).fill(false);
+
+    while (shotPlan.filter(Boolean).length < requiredColorCount) {
+        const randomSlot = Math.floor(Math.random() * 10);
+        shotPlan[randomSlot] = true;
     }
-];
+}
+
+
+
+function spawnColor() {
+    let newColor;
+
+    if (shotPlan[shotIndex]) {
+        newColor = requiredColor;
+        requiredColorSpawned++;
+    } else {
+        const otherColors = rainbowColors.filter(
+            color => color !== requiredColor
+        );
+
+        newColor =
+            otherColors[Math.floor(Math.random() * otherColors.length)];
+    }
+
+    colors.push(createColor(-50, newColor));
+
+    shotIndex++;
+
+    if (shotIndex >= shotPlan.length) {
+        shotIndex = 0;
+    }
+}
+
+let colors = [];
+let spawnTimer = 0;
+let spawnInterval = 0.5;
+
+
 
 
 let x = 0;
@@ -52,6 +89,7 @@ function resizeCanvas() {
 }
 
 resizeCanvas();
+startColorWindow();
 window.addEventListener("resize", resizeCanvas);
 
 // UPDATE =============================================================
@@ -74,6 +112,7 @@ function update(time) {
       helpText.textContent = `TIME UP! Lives: ${lives}`;
 
       timer = responseTime;
+      startColorWindow();
 
       if (lives <= 0) {
         gameOver = true;
@@ -81,13 +120,18 @@ function update(time) {
       }
     }
 
+    spawnTimer -= deltaTime;
+
+    if (spawnTimer <= 0) {
+        spawnColor();
+        spawnTimer = spawnInterval;
+    }
+
     for (let color of colors) {
         color.x += color.speed;
-
-        if (color.x > canvas.width) {
-            color.x = -color.size;
-        }
     }
+
+    colors = colors.filter(color => color.x <= canvas.width);
 }
 
 
@@ -112,8 +156,6 @@ function draw() {
     const centerX = canvas.width / 2;
     const centerY = 100;
 
-    const rainbowColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
-
     rainbowColors.forEach((color, index) => {
         if (rainbowProgress >= index * 3) {
             ctx.beginPath();
@@ -135,6 +177,7 @@ function draw() {
     ctx.font = "30px Arial";
     ctx.fillText(`Time: ${Math.ceil(timer)}`, 20, 120);
     ctx.fillText(`Lives: ${lives}`, 20, 160);
+    ctx.fillText(`Score: ${score}`, 20, 200);
 
 }
 
@@ -164,29 +207,43 @@ canvas.addEventListener("touchend", function (event) {
         const color = getColorAtPosition(touchStartX, touchStartY);
 
         if (color) {
-                if (color.color === requiredColor) {
-                        rainbowProgress++;
-                        timer = responseTime;
-                        helpText.textContent = `Correct! ${rainbowProgress}`;
 
-                        if (rainbowProgress >= 21) {
+            if (color.color === requiredColor) {
 
-                            rainbowComplete = true;
-                            helpText.textContent = "YOU WIN!";
-                        }
+                rainbowProgress++;
+                score++;
+                timer = responseTime;
 
-                    
+                requiredColorSpawned = false;
 
-                } else {
-                        lives--;
-                        timer = responseTime;
-                        helpText.textContent = `Wrong! Lives: ${lives}`;
+                helpText.textContent = `Correct! ${rainbowProgress}`;
 
-                        if (lives <= 0) {
-                            gameOver = true;
-                            helpText.textContent = "GAME OVER!";
-                        }
+                if (rainbowProgress % 3 === 0) {
+                    currentColorIndex++;
+                    requiredColor = rainbowColors[currentColorIndex];
                 }
+
+                if (rainbowProgress >= 21) {
+                    rainbowComplete = true;
+                    helpText.textContent = "YOU WIN!";
+                }
+
+            } else {
+
+                lives--;
+                timer = responseTime;
+
+                helpText.textContent = `Wrong! Lives: ${lives}`;
+
+                if (lives <= 0) {
+                    gameOver = true;
+                    helpText.textContent = "GAME OVER!";
+                }
+            }
+
+            // Kill the swiped colour
+            colors = colors.filter(c => c !== color);
+
         } else {
             helpText.textContent = `You missed!`;
         }
