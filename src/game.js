@@ -17,6 +17,13 @@ let lastTime = null;
 let currentColorIndex = 0;
 const rainbowColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
 let score = 0;
+const difficulty = {
+    startSpeed: 2,
+    speedIncrease: 0.05
+};
+let currentSpeed = difficulty.startSpeed;
+let accelerationTimer = 0;
+let accelerationInterval = 1;
 let requiredColorCount = 0;
 let requiredColorSpawned = 0;
 let shotPlan = [];
@@ -28,7 +35,7 @@ function createColor(x, color) {
         x: x,
         y: 200,
         size: 50,
-        speed: 2,
+        speed: currentSpeed,
         color: color
     };
 }
@@ -102,7 +109,17 @@ function update(time) {
     const deltaTime = (time - lastTime) / 1000;
     lastTime = time;
 
+
     if (rainbowComplete || gameOver) return;
+
+    accelerationTimer -= deltaTime;
+
+    if (accelerationTimer <= 0) {
+        currentSpeed += difficulty.speedIncrease;
+        accelerationTimer = accelerationInterval;
+    }
+
+
 
     timer -= deltaTime;
 
@@ -126,8 +143,10 @@ function update(time) {
         spawnColor();
         spawnTimer = spawnInterval;
     }
+    
 
     for (let color of colors) {
+        color.speed = currentSpeed;
         color.x += color.speed;
     }
 
