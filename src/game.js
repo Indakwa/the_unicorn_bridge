@@ -1,7 +1,7 @@
-
-
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+
+
 let helpText = document.querySelector(".helper-text");
 let swipeCount = 0;
 let touchStartY = 0;
@@ -16,6 +16,7 @@ let timer = responseTime;
 let lastTime = null;
 let currentColorIndex = 0;
 const rainbowColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+
 
 const bubbleColors = {
     red: "255,0,0",
@@ -40,6 +41,11 @@ const rainbowSettings = {
     alpha: 0.6
 };
 
+const streamSettings = {
+    mobileY: 400,
+    desktopY: 450,
+};
+
 const rainbowDrawColors = [
     "#FF3B30",
     "#FF7A00",
@@ -51,10 +57,18 @@ const rainbowDrawColors = [
 ];
 
 let score = 0;
+
+const gameSettings = {
+    swipesPerColor: 1,
+    colorsPerRound: 7,
+    roundsToWin: 7,
+    responseTime: 5,
+    swipeOffsetX: 15
+};
+
 const difficulty = {
     startSpeed: 2,
-    speedIncrease: 0.05,
-    swipesPerColor: 7
+    speedIncrease: 0.05
 };
 
 const silverSettings = {
@@ -75,11 +89,29 @@ let heartCooldownTimer = 0;
 let currentSpeed = difficulty.startSpeed;
 let accelerationTimer = 0;
 let accelerationInterval = 1;
+
+
 let requiredColorCount = 0;
 let requiredColorSpawned = 0;
 let shotPlan = [];
 let shotIndex = 0;
-let progressInColor = 0;
+
+let currentRound = 1;
+let completedColors = [];
+let swipesForCurrentColor = 0;
+
+chooseNextColor();
+
+
+function chooseNextColor() {
+    const availableColors = rainbowColors.filter(
+        color => !completedColors.includes(color)
+    );
+
+    const randomIndex = Math.floor(Math.random() * availableColors.length);
+
+    requiredColor = availableColors[randomIndex];
+}
 
 function drawBubble(x, y, r, color) {
 
@@ -215,6 +247,16 @@ function drawBubble(x, y, r, color) {
 
 function drawRainbow() {
 
+    const totalSwipes =
+      gameSettings.roundsToWin *
+      gameSettings.colorsPerRound *
+      gameSettings.swipesPerColor;
+
+    const growth = Math.min(rainbowProgress / totalSwipes, 1);
+
+    const fullArc = rainbowSettings.endAngle - rainbowSettings.startAngle;
+    const visibleEndAngle = rainbowSettings.startAngle + fullArc * growth;
+
     ctx.save();
 
     ctx.globalAlpha = rainbowSettings.alpha;
@@ -240,7 +282,7 @@ function drawRainbow() {
             rainbowSettings.y,
             bandRadius,
             rainbowSettings.startAngle,
-            rainbowSettings.endAngle
+            visibleEndAngle
         );
 
         ctx.stroke();
@@ -258,7 +300,7 @@ function drawRainbow() {
             rainbowSettings.y,
             bandRadius,
             rainbowSettings.startAngle,
-            rainbowSettings.endAngle
+            visibleEndAngle
         );
 
         ctx.stroke();
@@ -271,8 +313,8 @@ function drawRainbow() {
 function createColor(x, color) {
     return {
         x: x,
-        y: 200,
-        size: 50,
+        y: streamSettings.y,
+        size: 56,
         speed: currentSpeed,
         color: color
     };
@@ -324,23 +366,39 @@ function spawnColor() {
 
 let colors = [];
 let spawnTimer = 0;
-let spawnInterval = 0.5;
+
 
 
 
 
 let x = 0;
 
-
-
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
+    const isMobile = window.innerWidth < 768;
+
+    if (isMobile) {
+      streamSettings.y = streamSettings.mobileY;
+    } else {
+      streamSettings.y = streamSettings.desktopY;
+    }
+
+    canvas.width = isMobile ? 358 : 1024;
     canvas.height = window.innerHeight;
 
-    rainbowSettings.x = canvas.width / 2;
-    rainbowSettings.y = canvas.height * 0.65;
-    rainbowSettings.radius = canvas.width * 1.15;
+    canvas.style.width = canvas.width + "px";
+    canvas.style.height = canvas.height + "px";
+
+    if (isMobile) {
+        rainbowSettings.x = canvas.width / 2;
+        rainbowSettings.y = canvas.height * 0.44;
+        rainbowSettings.radius = canvas.width * 0.74;
+    } else {
+        rainbowSettings.x = canvas.width / 2;
+        rainbowSettings.y = canvas.height * 1.05;
+        rainbowSettings.radius = canvas.width * 0.9;
+    }
 }
+
 
 resizeCanvas();
 startColorWindow();
@@ -395,10 +453,11 @@ function update(time) {
     spawnTimer -= deltaTime;
 
     if (spawnTimer <= 0) {
-        spawnColor();
-        spawnTimer = spawnInterval;
+      spawnColor();
+      spawnTimer = 0.5;
+      
     }
-    
+        
 
     for (let color of colors) {
         color.speed = currentSpeed;
@@ -474,49 +533,40 @@ canvas.addEventListener("touchend", function (event) {
   const distance = touchStartY - touchEndY;
 
   if (distance > 50) {
-    const color = getColorAtPosition(touchStartX, touchStartY);
+    const color = getColorAtPosition(
+      touchStartX + gameSettings.swipeOffsetX,
+      touchStartY,
+    );
 
     if (color) {
       if (color.color === "silver") {
-        let silverProgress = silverSettings.reward;
-
-        while (silverProgress > 0) {
-          progressInColor++;
-          rainbowProgress++;
-          silverProgress--;
-
-          if (progressInColor >= difficulty.swipesPerColor) {
-            progressInColor = 0;
-            currentColorIndex++;
-
-            if (currentColorIndex < rainbowColors.length) {
-              requiredColor = rainbowColors[currentColorIndex];
-            }
-          }
-        }
-
+        swipesForCurrentColor += silverSettings.reward;
         score += silverSettings.reward;
         timer = responseTime;
 
-        helpText.textContent = `SILVER! +${silverSettings.reward}`;
-      } else if (color.color === "heart") {
-        let heartProgress = heartSettings.rewardScore;
+        if (swipesForCurrentColor >= gameSettings.swipesPerColor) {
+          completedColors.push(requiredColor);
+          swipesForCurrentColor = 0;
 
-        while (heartProgress > 0) {
-          progressInColor++;
-          rainbowProgress++;
-          heartProgress--;
+          if (completedColors.length >= gameSettings.colorsPerRound) {
+            rainbowProgress++;
+            currentRound++;
 
-          if (progressInColor >= difficulty.swipesPerColor) {
-            progressInColor = 0;
-            currentColorIndex++;
-
-            if (currentColorIndex < rainbowColors.length) {
-              requiredColor = rainbowColors[currentColorIndex];
+            if (currentRound > gameSettings.roundsToWin) {
+              rainbowComplete = true;
+              helpText.textContent = "YOU WIN!";
+            } else {
+              completedColors = [];
+              chooseNextColor();
+              helpText.textContent = `ROUND ${currentRound}`;
             }
+          } else {
+            chooseNextColor();
           }
+        } else {
+          helpText.textContent = `SILVER! +${silverSettings.reward}`;
         }
-
+      } else if (color.color === "heart") {
         lives += heartSettings.rewardLife;
         score += heartSettings.rewardScore;
 
@@ -524,30 +574,31 @@ canvas.addEventListener("touchend", function (event) {
 
         helpText.textContent = `HEART! +${heartSettings.rewardLife} LIFE`;
       } else if (color.color === requiredColor) {
+        swipesForCurrentColor++;
         rainbowProgress++;
-        progressInColor++;
         score++;
         timer = responseTime;
 
-        requiredColorSpawned = false;
+        helpText.textContent = `Correct! ${swipesForCurrentColor}/${gameSettings.swipesPerColor}`;
 
-        helpText.textContent = `Correct! ${rainbowProgress}`;
+        if (swipesForCurrentColor >= gameSettings.swipesPerColor) {
+          completedColors.push(requiredColor);
+          swipesForCurrentColor = 0;
 
-        if (progressInColor >= difficulty.swipesPerColor) {
-          progressInColor -= difficulty.swipesPerColor;
-          currentColorIndex++;
+          if (completedColors.length >= gameSettings.colorsPerRound) {
+            currentRound++;
 
-          if (currentColorIndex < rainbowColors.length) {
-            requiredColor = rainbowColors[currentColorIndex];
+            if (currentRound > gameSettings.roundsToWin) {
+              rainbowComplete = true;
+              helpText.textContent = "YOU WIN!";
+            } else {
+              completedColors = [];
+              chooseNextColor();
+              helpText.textContent = `ROUND ${currentRound}`;
+            }
+          } else {
+            chooseNextColor();
           }
-        }
-
-        if (
-          rainbowProgress >=
-          rainbowColors.length * difficulty.swipesPerColor
-        ) {
-          rainbowComplete = true;
-          helpText.textContent = "YOU WIN!";
         }
       } else {
         lives--;
