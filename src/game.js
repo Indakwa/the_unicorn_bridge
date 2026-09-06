@@ -63,12 +63,13 @@ const gameSettings = {
     colorsPerRound: 7,
     roundsToWin: 7,
     responseTime: 5,
-    swipeOffsetX: 15
+    swipeOffsetMultiplier: 5
 };
 
 const difficulty = {
     startSpeed: 2,
-    speedIncrease: 0.05
+    speedIncrease: 0.01,
+    maxSpeed: 4
 };
 
 const silverSettings = {
@@ -428,8 +429,12 @@ function update(time) {
     accelerationTimer -= deltaTime;
 
     if (accelerationTimer <= 0) {
-        currentSpeed += difficulty.speedIncrease;
-        accelerationTimer = accelerationInterval;
+      currentSpeed = Math.min(
+        currentSpeed + difficulty.speedIncrease,
+        difficulty.maxSpeed,
+      );
+
+      accelerationTimer = accelerationInterval;
     }
 
 
@@ -534,7 +539,7 @@ canvas.addEventListener("touchend", function (event) {
 
   if (distance > 50) {
     const color = getColorAtPosition(
-      touchStartX + gameSettings.swipeOffsetX,
+      touchStartX + currentSpeed * gameSettings.swipeOffsetMultiplier,
       touchStartY,
     );
 
