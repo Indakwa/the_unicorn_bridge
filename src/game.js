@@ -26,8 +26,8 @@ const bubbleColors = {
     yellow: "255,220,0",
     green: "0,190,60",
     blue: "0,110,255",
-    indigo: "75,40,180",
-    violet: "160,40,220",
+    indigo: "45,25,140",
+    violet: "180,45,220",
     silver: "220,235,245"
 };
 
@@ -114,6 +114,7 @@ function drawSky() {
     );
 
     gradient.addColorStop(0, skyTop);
+    gradient.addColorStop(0.7, skyTop);
     gradient.addColorStop(1, skyBottom);
 
     ctx.fillStyle = gradient;
@@ -141,7 +142,7 @@ function drawCloud(x, y, scale = 1) {
     ctx.fill();
 
     // White cloud
-    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
 
     ctx.beginPath();
 
@@ -307,7 +308,12 @@ function drawRainbow() {
       gameSettings.colorsPerRound *
       gameSettings.swipesPerColor;
 
-    const growth = Math.min(rainbowProgress / totalSwipes, 1);
+    const startingGrowth = 0.15;
+
+    const growth = Math.min(
+      startingGrowth + (rainbowProgress / totalSwipes) * (1 - startingGrowth),
+      1,
+    );
 
     const fullArc = rainbowSettings.endAngle - rainbowSettings.startAngle;
     const visibleEndAngle = rainbowSettings.startAngle + fullArc * growth;
@@ -529,93 +535,110 @@ function update(time) {
 
 // DRAWING =============================================================
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    drawSky();
+  drawSky();
 
-    const isMobile = canvas.width < 768;
+  const isMobile = canvas.width < 768;
 
-    if (isMobile) {
-        drawCloud(canvas.width * 0.25, 120, 0.6);
-        drawCloud(canvas.width * 0.75, 180, 0.7);
-    } else {
-        drawCloud(canvas.width * 0.18, 140, 0.8);
-        drawCloud(canvas.width * 0.50, 190, 1);
-        drawCloud(canvas.width * 0.82, 120, 0.7);
-    }
+  if (isMobile) {
+    drawCloud(canvas.width * 0.25, 120, 0.6);
+    drawCloud(canvas.width * 0.75, 180, 0.7);
+  } else {
+    drawCloud(canvas.width * 0.18, 140, 0.8);
+    drawCloud(canvas.width * 0.5, 190, 1);
+    drawCloud(canvas.width * 0.82, 120, 0.7);
+  }
 
-    drawRainbow();
+  drawRainbow();
 
-    for (let color of colors) {
+  for (let color of colors) {
     if (color.color === "heart") {
-        ctx.fillStyle = "pink";
+      ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+      ctx.font = "48px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
-        ctx.beginPath();
-        ctx.arc(
+      ctx.fillText("♥", color.x + color.size / 2, color.y + color.size / 2);
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+    } else if (color.color === "silver") {
+      const size = 40;
+      const offset = (color.size - size) / 2;
+
+      const x = color.x + offset;
+      const y = color.y + offset;
+
+      ctx.fillStyle = "rgba(220, 235, 245, 0.5)";
+      ctx.shadowColor = "rgba(220, 235, 245, 0.3)";
+      ctx.shadowBlur = 15;
+
+      ctx.beginPath();
+      ctx.roundRect(x, y, size, size, 8);
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+    } else {
+      drawBubble(
         color.x + color.size / 2,
         color.y + color.size / 2,
         color.size / 2,
-        0,
-        Math.PI * 2,
-        );
-        ctx.fill();
-    } else {
-            drawBubble(
-              color.x + color.size / 2,
-              color.y + color.size / 2,
-              color.size / 2,
-              bubbleColors[color.color],
-            );
+        bubbleColors[color.color],
+      );
     }
+  }
 
-    }
+  const requiredWidth = canvas.width * 0.75;
+  const requiredHeight = 60;
+  const requiredX = (canvas.width - requiredWidth) / 2;
+  const requiredY = canvas.height - requiredHeight - 20;
 
-    const requiredWidth = canvas.width * 0.75;
-    const requiredHeight = 60;
-    const requiredX = (canvas.width - requiredWidth) / 2;
-    const requiredY = canvas.height - requiredHeight - 20;
+  const gradient = ctx.createRadialGradient(
+    requiredX + requiredWidth * 0.3,
+    requiredY + requiredHeight * 0.3,
+    5,
+    requiredX + requiredWidth / 2,
+    requiredY + requiredHeight / 2,
+    requiredWidth * 0.6,
+  );
 
-    const gradient = ctx.createRadialGradient(
-      requiredX + requiredWidth * 0.3,
-      requiredY + requiredHeight * 0.3,
-      5,
-      requiredX + requiredWidth / 2,
-      requiredY + requiredHeight / 2,
-      requiredWidth * 0.6,
-    );
+  gradient.addColorStop(0, "rgba(255,255,255,0.5)");
 
-    gradient.addColorStop(0, `rgba(255,255,255,0.5)`);
+  gradient.addColorStop(0.2, `rgba(${bubbleColors[requiredColor]},0.5)`);
 
-    gradient.addColorStop(0.2, `rgba(${bubbleColors[requiredColor]},0.5)`);
+  gradient.addColorStop(0.6, `rgba(${bubbleColors[requiredColor]},0.5)`);
 
-    gradient.addColorStop(0.6, `rgba(${bubbleColors[requiredColor]},0.5)`);
+  gradient.addColorStop(1, `rgba(${bubbleColors[requiredColor]},0.5)`);
 
-    gradient.addColorStop(1, `rgba(${bubbleColors[requiredColor]},0.5)`);
+  ctx.shadowColor = `rgba(${bubbleColors[requiredColor]}, 0.25)`;
+  ctx.shadowBlur = 15;
 
-    ctx.shadowColor = `rgba(${bubbleColors[requiredColor]}, 0.25)`;
-    ctx.shadowBlur = 15;
+  ctx.fillStyle = gradient;
 
-    ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.roundRect(
+    requiredX,
+    requiredY,
+    requiredWidth,
+    requiredHeight,
+    requiredHeight / 3,
+  );
 
-    ctx.beginPath();
-    ctx.roundRect(
-      requiredX,
-      requiredY,
-      requiredWidth,
-      requiredHeight,
-      requiredHeight / 3,
-    );
+  ctx.fill();
 
-    ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "black";
+  ctx.font = "24px Arial";
 
-    ctx.shadowBlur = 0;
+  ctx.fillText(`♥ ${lives}`, 20, 40);
 
-    ctx.fillStyle = "black";
-    ctx.font = "30px Arial";
-    ctx.fillText(`Time: ${Math.ceil(timer)}`, 20, 120);
-    ctx.fillText(`Lives: ${lives}`, 20, 160);
-    ctx.fillText(`Score: ${score}`, 20, 200);
+  ctx.fillText(`⏱ ${Math.ceil(timer)}`, 100, 40);
 
+  ctx.textAlign = "right";
+  ctx.fillText(`Score: ${score}`, canvas.width - 20, 40);
+
+  ctx.textAlign = "left";
 }
 
 
