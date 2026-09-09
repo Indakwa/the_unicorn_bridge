@@ -18,7 +18,11 @@ let timer = responseTime;
 let lastTime = null;
 let currentColorIndex = 0;
 const rainbowColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
-
+let rainbowPulse = 0;
+let silverSparkle = [];
+let winAnimation = 0;
+let winParticles = [];
+let gameOverAnimation = 0;
 
 const bubbleColors = {
     red: "255,0,0",
@@ -102,6 +106,55 @@ let shotIndex = 0;
 let currentRound = 1;
 let completedColors = [];
 let swipesForCurrentColor = 0;
+
+let feedbacks = [];
+let wrongFlash = 0;
+let timeFlash = 0;
+
+function showFeedback(text, x, y) {
+    feedbacks.push({
+        text: text,
+        x: x,
+        y: y,
+        life: 0.8,
+        maxLife: 0.8
+    });
+}
+
+function updateFeedbacks(deltaTime) {
+    for (let feedback of feedbacks) {
+        feedback.y -= 40 * deltaTime;
+        feedback.life -= deltaTime;
+    }
+
+    feedbacks = feedbacks.filter(
+        feedback => feedback.life > 0
+    );
+}
+
+function drawFeedbacks() {
+    ctx.save();
+
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "center";
+
+    for (let feedback of feedbacks) {
+        const alpha = feedback.life / feedback.maxLife;
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "white";
+
+        ctx.fillText(
+            feedback.text,
+            feedback.x,
+            feedback.y
+        );
+    }
+
+    ctx.restore();
+
+    ctx.globalAlpha = 1;
+}
 
 chooseNextColor();
 
@@ -351,8 +404,8 @@ function drawRainbow() {
 
         // Main colour
         ctx.strokeStyle = color;
-        ctx.lineWidth = rainbowSettings.bandWidth;
-        ctx.globalAlpha = rainbowSettings.alpha;
+        ctx.lineWidth = rainbowSettings.bandWidth + rainbowPulse * 8 + Math.sin(winAnimation) * 3;
+        ctx.globalAlpha = rainbowSettings.alpha + rainbowPulse * 0.5 + Math.max(0, Math.sin(winAnimation)) * 0.2;
 
         ctx.beginPath();
 
@@ -474,6 +527,31 @@ function update(time) {
 
     const deltaTime = (time - lastTime) / 1000;
     lastTime = time;
+    updateFeedbacks(deltaTime);
+
+    for (let sparkle of silverSparkle) {
+      sparkle.x += sparkle.vx * deltaTime;
+      sparkle.y += sparkle.vy * deltaTime;
+      sparkle.life -= deltaTime;
+    }
+
+    silverSparkle = silverSparkle.filter((sparkle) => sparkle.life > 0);
+
+    wrongFlash = Math.max(0, wrongFlash - deltaTime * 5);
+    timeFlash = Math.max(0, timeFlash - deltaTime * 5);
+    rainbowPulse = Math.max(0, rainbowPulse - deltaTime * 4);
+
+    if (rainbowComplete) {
+      winAnimation += deltaTime * 5;
+
+      for (let particle of winParticles) {
+        particle.x += particle.vx * deltaTime;
+        particle.y += particle.vy * deltaTime;
+        particle.life -= deltaTime;
+      }
+
+      winParticles = winParticles.filter((particle) => particle.life > 0);
+    }
 
     if (silverCooldownTimer > 0) {
       silverCooldownTimer -= deltaTime;
@@ -484,7 +562,12 @@ function update(time) {
     }
 
 
-    if (rainbowComplete || gameOver) return;
+    if (rainbowComplete) return;
+
+    if (gameOver) {
+        gameOverAnimation += deltaTime * 4;
+        return;
+    }
 
     accelerationTimer -= deltaTime;
 
@@ -503,15 +586,16 @@ function update(time) {
 
     if (timer <= 0) {
       lives--;
+      timeFlash = 1;
 
-      helpText.textContent = `TIME UP! Lives: ${lives}`;
+      showFeedback("Time, tick-tock!", canvas.width / 2, canvas.height * 0.35);
 
       timer = responseTime;
       startColorWindow();
 
       if (lives <= 0) {
         gameOver = true;
-        helpText.textContent = "GAME OVER!";
+        gameOverAnimation = 1;
       }
     }
 
@@ -589,6 +673,26 @@ function draw() {
     }
   }
 
+  drawFeedbacks();
+
+  if (rainbowComplete) {
+    for (let particle of winParticles) {
+      ctx.fillStyle = `rgba(255,255,255,${particle.life})`;
+
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  for (let sparkle of silverSparkle) {
+    ctx.fillStyle = `rgba(255,255,255,${sparkle.life * 2})`;
+
+    ctx.beginPath();
+    ctx.arc(sparkle.x, sparkle.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   const requiredWidth = canvas.width * 0.75;
   const requiredHeight = 60;
   const requiredX = (canvas.width - requiredWidth) / 2;
@@ -639,6 +743,44 @@ function draw() {
   ctx.fillText(`Score: ${score}`, canvas.width - 20, 40);
 
   ctx.textAlign = "left";
+
+  if (wrongFlash > 0) {
+    ctx.fillStyle = `rgba(255, 0, 0, ${wrongFlash * 0.15})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  if (timeFlash > 0) {
+    ctx.fillStyle = `rgba(255, 180, 0, ${timeFlash * 0.12})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  if (gameOver) {
+    const pulse = 0.12 + Math.abs(Math.sin(gameOverAnimation)) * 0.08;
+
+    ctx.fillStyle = `rgba(0, 0, 0, ${pulse})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  if (gameOver) {
+    const scale = 1 + Math.abs(Math.sin(gameOverAnimation)) * 0.05;
+
+    ctx.save();
+
+    ctx.translate(canvas.width / 2, canvas.height * 0.35);
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = "white";
+    ctx.font = "bold 42px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillText("GAME OVER", 0, 0);
+
+    ctx.font = "bold 20px Arial";
+    ctx.fillText("PLAY AGAIN", 0, 55);
+
+    ctx.restore();
+  }
 }
 
 
@@ -652,12 +794,40 @@ function gameLoop(time) {
 
 requestAnimationFrame(gameLoop);
 
+
+function restartGame() {
+    lives = 3;
+    score = 0;
+    timer = responseTime;
+
+    rainbowProgress = 0;
+    rainbowComplete = false;
+    gameOver = false;
+
+    currentRound = 1;
+    completedColors = [];
+    swipesForCurrentColor = 0;
+
+    colors = [];
+    spawnTimer = 0;
+
+    currentSpeed = difficulty.startSpeed;
+    accelerationTimer = 0;
+
+    chooseNextColor();
+    startColorWindow();
+}
+
 canvas.addEventListener("touchstart", function (event) {
-    touchStartY = event.touches[0].clientY;
-    touchStartX = event.touches[0].clientX;
+  touchStartY = event.touches[0].clientY;
+  touchStartX = event.touches[0].clientX;
 });
 
 canvas.addEventListener("touchend", function (event) {
+  if (gameOver) {
+    restartGame();
+    return;
+  }
   if (rainbowComplete || gameOver) return;
 
   const touchEndY = event.changedTouches[0].clientY;
@@ -675,6 +845,18 @@ canvas.addEventListener("touchend", function (event) {
         score += silverSettings.reward;
         timer = responseTime;
 
+        showFeedback("+3", color.x + color.size / 2, color.y);
+
+        for (let i = 0; i < 12; i++) {
+          silverSparkle.push({
+            x: color.x + color.size / 2,
+            y: color.y + color.size / 2,
+            vx: (Math.random() - 0.5) * 160,
+            vy: (Math.random() - 0.5) * 160,
+            life: 0.5,
+          });
+        }
+
         if (swipesForCurrentColor >= gameSettings.swipesPerColor) {
           completedColors.push(requiredColor);
           swipesForCurrentColor = 0;
@@ -685,17 +867,30 @@ canvas.addEventListener("touchend", function (event) {
 
             if (currentRound > gameSettings.roundsToWin) {
               rainbowComplete = true;
-              helpText.textContent = "YOU WIN!";
+              winAnimation = 1;
+              showFeedback("YOU WIN!", canvas.width / 2, canvas.height * 0.35);
+
+              for (let i = 0; i < 25; i++) {
+                winParticles.push({
+                  x: canvas.width / 2,
+                  y: canvas.height * 0.45,
+                  vx: (Math.random() - 0.5) * 200,
+                  vy: (Math.random() - 0.5) * 200,
+                  life: 1,
+                });
+              }
             } else {
               completedColors = [];
               chooseNextColor();
-              helpText.textContent = `ROUND ${currentRound}`;
+              showFeedback(
+                `Awesome!Round ${currentRound}!`,
+                canvas.width / 2,
+                canvas.height * 0.35,
+              );
             }
           } else {
             chooseNextColor();
           }
-        } else {
-          helpText.textContent = `SILVER! +${silverSettings.reward}`;
         }
       } else if (color.color === "heart") {
         lives += heartSettings.rewardLife;
@@ -703,14 +898,15 @@ canvas.addEventListener("touchend", function (event) {
 
         timer = responseTime;
 
-        helpText.textContent = `HEART! +${heartSettings.rewardLife} LIFE`;
+        showFeedback("+1 LIFE", color.x + color.size / 2, color.y);
       } else if (color.color === requiredColor) {
         swipesForCurrentColor++;
         rainbowProgress++;
         score++;
         timer = responseTime;
+        rainbowPulse = 1;
 
-        helpText.textContent = `Correct! ${swipesForCurrentColor}/${gameSettings.swipesPerColor}`;
+        showFeedback("+1", color.x + color.size / 2, color.y);
 
         if (swipesForCurrentColor >= gameSettings.swipesPerColor) {
           completedColors.push(requiredColor);
@@ -734,12 +930,13 @@ canvas.addEventListener("touchend", function (event) {
       } else {
         lives--;
         timer = responseTime;
+        wrongFlash = 1;
 
-        helpText.textContent = `Wrong! Lives: ${lives}`;
+        showFeedback("Oops!", color.x + color.size / 2, color.y);
 
         if (lives <= 0) {
           gameOver = true;
-          helpText.textContent = "GAME OVER!";
+          gameOverAnimation = 1;
         }
       }
 
