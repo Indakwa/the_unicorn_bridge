@@ -2,6 +2,8 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 
+const skyTop = "#4DB8F2";
+const skyBottom = "#DDF6FF";
 let helpText = document.querySelector(".helper-text");
 let swipeCount = 0;
 let touchStartY = 0;
@@ -59,7 +61,7 @@ const rainbowDrawColors = [
 let score = 0;
 
 const gameSettings = {
-    swipesPerColor: 1,
+    swipesPerColor: 3,
     colorsPerRound: 7,
     roundsToWin: 7,
     responseTime: 5,
@@ -102,6 +104,58 @@ let completedColors = [];
 let swipesForCurrentColor = 0;
 
 chooseNextColor();
+
+function drawSky() {
+    const gradient = ctx.createLinearGradient(
+        0,
+        0,
+        0,
+        canvas.height
+    );
+
+    gradient.addColorStop(0, skyTop);
+    gradient.addColorStop(1, skyBottom);
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+}
+
+function drawCloud(x, y, scale = 1) {
+    ctx.save();
+
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // Soft underside
+    ctx.fillStyle = "rgba(190, 220, 235, 0.4)";
+
+    ctx.beginPath();
+
+    ctx.ellipse(5, 18, 65, 22, 0, 0, Math.PI * 2);
+
+    ctx.fill();
+
+    // White cloud
+    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+
+    ctx.beginPath();
+
+    ctx.arc(-40, 8, 22, 0, Math.PI * 2);
+    ctx.arc(-15, -8, 32, 0, Math.PI * 2);
+    ctx.arc(15, -15, 40, 0, Math.PI * 2);
+    ctx.arc(45, 5, 25, 0, Math.PI * 2);
+
+    ctx.ellipse(5, 15, 65, 22, 0, 0, Math.PI * 2);
+
+    ctx.fill();
+
+    ctx.restore();
+}
 
 
 function chooseNextColor() {
@@ -477,6 +531,19 @@ function update(time) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    drawSky();
+
+    const isMobile = canvas.width < 768;
+
+    if (isMobile) {
+        drawCloud(canvas.width * 0.25, 120, 0.6);
+        drawCloud(canvas.width * 0.75, 180, 0.7);
+    } else {
+        drawCloud(canvas.width * 0.18, 140, 0.8);
+        drawCloud(canvas.width * 0.50, 190, 1);
+        drawCloud(canvas.width * 0.82, 120, 0.7);
+    }
+
     drawRainbow();
 
     for (let color of colors) {
@@ -503,9 +570,45 @@ function draw() {
 
     }
 
-    ctx.fillStyle = requiredColor;
-    ctx.fillRect(20, 20, 50, 50);
+    const requiredWidth = canvas.width * 0.75;
+    const requiredHeight = 60;
+    const requiredX = (canvas.width - requiredWidth) / 2;
+    const requiredY = canvas.height - requiredHeight - 20;
 
+    const gradient = ctx.createRadialGradient(
+      requiredX + requiredWidth * 0.3,
+      requiredY + requiredHeight * 0.3,
+      5,
+      requiredX + requiredWidth / 2,
+      requiredY + requiredHeight / 2,
+      requiredWidth * 0.6,
+    );
+
+    gradient.addColorStop(0, `rgba(255,255,255,0.5)`);
+
+    gradient.addColorStop(0.2, `rgba(${bubbleColors[requiredColor]},0.5)`);
+
+    gradient.addColorStop(0.6, `rgba(${bubbleColors[requiredColor]},0.5)`);
+
+    gradient.addColorStop(1, `rgba(${bubbleColors[requiredColor]},0.5)`);
+
+    ctx.shadowColor = `rgba(${bubbleColors[requiredColor]}, 0.25)`;
+    ctx.shadowBlur = 15;
+
+    ctx.fillStyle = gradient;
+
+    ctx.beginPath();
+    ctx.roundRect(
+      requiredX,
+      requiredY,
+      requiredWidth,
+      requiredHeight,
+      requiredHeight / 3,
+    );
+
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
 
     ctx.fillStyle = "black";
     ctx.font = "30px Arial";
