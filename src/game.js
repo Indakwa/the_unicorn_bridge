@@ -1,7 +1,27 @@
+'use strict';
+let // ZzFXMicro - Zuper Zmall Zound Zynth - v1.3.2 by Frank Force
+zzfxV=.3,               // volume
+zzfxX=null, // audio context
+zzfx=                   // play sound
+(p=1,k=.05,b=220,e=0,r=0,t=.1,q=0,D=1,u=0,y=0,v=0,z=0,l=0,E=0,A=0,F=0,c=0,w=1,m=0,B=0
+,N=0)=>{let M=Math,d=2*M.PI,R=44100,G=u*=500*d/R/R,C=b*=(1-k+2*k*M.random(k=[]))*d/R,
+g=0,H=0,a=0,n=1,I=0,J=0,f=0,h=N<0?-1:1,x=d*h*N*2/R,L=M.cos(x),Z=M.sin,K=Z(x)/4,O=1+K,
+X=-2*L/O,Y=(1-K)/O,P=(1+h*L)/2/O,Q=-(h+L)/O,S=P,T=0,U=0,V=0,W=0;e=R*e+9;m*=R;r*=R;t*=
+R;c*=R;y*=500*d/R**3;A*=d/R;v*=d/R;z*=R;l=R*l|0;p*=zzfxV;for(h=e+m+r+t+c|0;a<h;k[a++]
+=f*p)++J%(100*F|0)||(f=q?1<q?2<q?3<q?4<q?(g/d%1<D/2)*2-1:Z(g**3):M.max(M.min(M.tan(g)
+,1),-1):1-(2*g/d%2+2)%2:1-4*M.abs(M.round(g/d)-g/d):Z(g),f=(l?1-B+B*Z(d*a/l):1)*(4<q?
+f:(f<0?-1:1)*M.abs(f)**D)*(a<e?a/e:a<e+m?1-(a-e)/m*(1-w):a<e+m+r?w:a<h-c?(h-a-c)/t*w:
+0),f=c?f/2+(c>a?0:(a<h-c?1:(h-a)/c)*k[a-c|0]/2/p):f,N?f=W=S*T+Q*(T=U)+P*(U=f)-Y*V-X*(
+V=W):0),x=(b+=u+=y)*M.cos(A*H++),g+=x+x*E*Z(a**5),n&&++n>z&&(b+=v,C+=v,n=0),!l||++I%l
+||(b=C,u=G,n=n||1);X=zzfxX,p=X.createBuffer(1,h,R);p.getChannelData(0).set(k);b=X.
+createBufferSource();b.buffer=p;b.connect(X.destination);b.start()}
+
+
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-
+let gameStarted = false;
 const skyTop = "#4DB8F2";
 const skyBottom = "#DDF6FF";
 let helpText = document.querySelector(".helper-text");
@@ -157,6 +177,28 @@ function drawFeedbacks() {
 }
 
 chooseNextColor();
+
+function drawStartScreen() {
+  ctx.fillStyle = "#DDF6FF";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#111";
+  ctx.font = "bold 48px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("RAINBOW", canvas.width / 2, canvas.height / 2 - 60);
+
+  ctx.font = "24px Arial";
+  ctx.fillText("Tap PLAY to start", canvas.width / 2, canvas.height / 2);
+
+  ctx.fillStyle = "#111";
+  ctx.fillRect(canvas.width / 2 - 80, canvas.height / 2 + 40, 160, 55);
+
+  ctx.fillStyle = "white";
+  ctx.font = "bold 22px Arial";
+  ctx.fillText("PLAY", canvas.width / 2, canvas.height / 2 + 76);
+
+  ctx.textAlign = "left";
+}
 
 function drawSky() {
     const gradient = ctx.createLinearGradient(
@@ -596,6 +638,7 @@ function update(time) {
       if (lives <= 0) {
         gameOver = true;
         gameOverAnimation = 1;
+        zzfx(...[,,300,.02,.25,.28,1,.7,,1,,,,,,,,.69,.27]);
       }
     }
 
@@ -619,6 +662,12 @@ function update(time) {
 
 // DRAWING =============================================================
 function draw() {
+
+  if (!gameStarted) {
+    drawStartScreen();
+    return;
+  }
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   drawSky();
@@ -819,11 +868,20 @@ function restartGame() {
 }
 
 canvas.addEventListener("touchstart", function (event) {
+
   touchStartY = event.touches[0].clientY;
   touchStartX = event.touches[0].clientX;
 });
 
 canvas.addEventListener("touchend", function (event) {
+  if (!gameStarted) {
+    gameStarted = true;
+
+    zzfxX = new AudioContext();
+
+    return;
+  }
+
   if (gameOver) {
     restartGame();
     return;
@@ -845,6 +903,8 @@ canvas.addEventListener("touchend", function (event) {
         score += silverSettings.reward;
         timer = responseTime;
 
+
+        zzfx(...[1.4,,456,.01,.18,.3,,3.2,-16,,,,,,,,.12,.93,.2]);
         showFeedback("+3", color.x + color.size / 2, color.y);
 
         for (let i = 0; i < 12; i++) {
@@ -867,6 +927,7 @@ canvas.addEventListener("touchend", function (event) {
 
             if (currentRound > gameSettings.roundsToWin) {
               rainbowComplete = true;
+              zzfx(...[,,171,.08,.26,.19,1,2.7,,,-122,.1,.04,,,,,.87,.22,,-1458]);
               winAnimation = 1;
               showFeedback("YOU WIN!", canvas.width / 2, canvas.height * 0.35);
 
@@ -882,6 +943,7 @@ canvas.addEventListener("touchend", function (event) {
             } else {
               completedColors = [];
               chooseNextColor();
+              zzfx(...[,,658,,.09,.18,,3,,,488,.05,.05,,,,,.56,.03]);
               showFeedback(
                 `Awesome!Round ${currentRound}!`,
                 canvas.width / 2,
@@ -898,6 +960,8 @@ canvas.addEventListener("touchend", function (event) {
 
         timer = responseTime;
 
+
+        zzfx(...[.8,,422,.07,.11,.14,1,1.3,,,288,.11,.04,,,,,.54,.24,.02,139]);
         showFeedback("+1 LIFE", color.x + color.size / 2, color.y);
       } else if (color.color === requiredColor) {
         swipesForCurrentColor++;
@@ -906,6 +970,7 @@ canvas.addEventListener("touchend", function (event) {
         timer = responseTime;
         rainbowPulse = 1;
 
+        zzfx(...[1.7,,240,.01,.08,.06,,2.8,-10,-5,,,,,,,.03,.57,.06]);
         showFeedback("+1", color.x + color.size / 2, color.y);
 
         if (swipesForCurrentColor >= gameSettings.swipesPerColor) {
@@ -917,10 +982,12 @@ canvas.addEventListener("touchend", function (event) {
 
             if (currentRound > gameSettings.roundsToWin) {
               rainbowComplete = true;
+              zzfx(...[,,171,.08,.26,.19,1,2.7,,,-122,.1,.04,,,,,.87,.22,,-1458]);
               helpText.textContent = "YOU WIN!";
             } else {
               completedColors = [];
               chooseNextColor();
+              zzfx(...[,,658,,.09,.18,,3,,,488,.05,.05,,,,,.56,.03]);
               helpText.textContent = `ROUND ${currentRound}`;
             }
           } else {
@@ -932,11 +999,14 @@ canvas.addEventListener("touchend", function (event) {
         timer = responseTime;
         wrongFlash = 1;
 
+        zzfx(...[1.2,,204,.01,.02,.09,1,3.3,,71,,,,,,.1,,.95,.02,,-1449]);
+
         showFeedback("Oops!", color.x + color.size / 2, color.y);
 
         if (lives <= 0) {
           gameOver = true;
           gameOverAnimation = 1;
+          zzfx(...[,,300,.02,.25,.28,1,.7,,1,,,,,,,,.69,.27]);
         }
       }
 
