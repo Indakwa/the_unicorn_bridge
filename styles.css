@@ -38,7 +38,7 @@ canvas{
     font-size:16px
 }
 
-#playButton,#playAgainButton{
+#playButton,#playAgainButton, #nextLevelButton{
     padding:14px 48px;
     border:0;
     border-radius:32px;
@@ -102,4 +102,46 @@ canvas{
         transform:translateY(-30px) rotate(180deg);
         opacity:1
     }
+}
+
+
+#levelSelect{
+    text-align:center
+}
+
+#levelSelect p{
+    margin:0 0 10px;
+    font-size:14px;
+    font-weight:700
+}
+
+#levelSelect div{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:8px;
+    max-width:300px
+}
+
+#levelSelect button{
+    width:42px;
+    height:42px;
+    border:0;
+    border-radius:50%;
+    background:#fff;
+    font-weight:700
+}
+
+#levelSelect button:last-child{
+    width:64px;
+    border-radius:21px
+}
+
+#levelSelect button.selected{
+    background:#111;
+    color:#fff
+}
+
+#nextLevelButton{ 
+    background:#ff8c00;
 }

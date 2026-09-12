@@ -86,12 +86,26 @@ const unicornPosition = {
 
 let unicornBob = 0;
 
+const levels = [
+    { swipesPerColor: 1, roundsToWin: 1 },
+    { swipesPerColor: 1, roundsToWin: 2 },
+    { swipesPerColor: 2, roundsToWin: 3 },
+    { swipesPerColor: 2, roundsToWin: 4 },
+    { swipesPerColor: 3, roundsToWin: 5 },
+    { swipesPerColor: 3, roundsToWin: 6 },
+    { swipesPerColor: 3, roundsToWin: 7 }
+];
+
+let currentLevel = 1;
+
 const gameSettings = {
-    swipesPerColor: 3, //3
     colorsPerRound: 7,
-    roundsToWin: 7, //7
     swipeOffsetMultiplier: 5
 };
+
+function getLevelSettings() {
+    return levels[currentLevel - 1];
+}
 
 const difficulty = {
     startSpeed: 2,
@@ -129,12 +143,24 @@ let timeFlash = 0;
 
 const startScreen = document.getElementById("startScreen");
 const playButton = document.getElementById("playButton");
+const levelButtons = document.querySelectorAll("#levelSelect button");
+
+levelButtons.forEach(button => {
+    button.addEventListener("click", () => {
+        currentLevel = Number(button.dataset.level);
+
+        levelButtons.forEach(b => b.classList.remove("selected"));
+        button.classList.add("selected");
+    });
+});
 const pauseButton = document.getElementById("pauseButton");
 const pauseToggle = document.getElementById("pauseToggle");
 
 const winScreen = document.getElementById("winScreen");
 const finalScore = document.getElementById("finalScore");
+const winTitle = document.getElementById("winTitle");
 const playAgainButton = document.getElementById("playAgainButton");
+const nextLevelButton = document.getElementById("nextLevelButton");
 
 function createWinConfetti() {
   const rainbowColors = [
@@ -169,6 +195,12 @@ function createWinConfetti() {
 }
 
 function showWinScreen() {
+    winTitle.textContent = currentLevel === 7
+    ? "BOSS LEVEL COMPLETE!"
+    : `LEVEL ${currentLevel} COMPLETE!`;
+
+    nextLevelButton.style.display = currentLevel < 7 ? "block" : "none";
+
   finalScore.textContent = `Score: ${score * 11 + 1}`;
   winScreen.style.display = "flex";
   createWinConfetti();
@@ -205,11 +237,12 @@ function showWinScreen() {
 }
 
 playButton.addEventListener("click", () => {
-  gameStarted = true;
-  startScreen.style.display = "none";
-  pauseButton.style.display = "block";
+    restartGame();
+    gameStarted = true;
+    startScreen.style.display = "none";
+    pauseButton.style.display = "block";
 
-  zzfxX = new AudioContext();
+    zzfxX = new AudioContext();
 });
 
 pauseToggle.addEventListener("click", () => {
@@ -221,6 +254,13 @@ pauseToggle.addEventListener("click", () => {
 playAgainButton.addEventListener("click", () => {
     winScreen.style.display = "none";
     restartGame();
+});
+
+nextLevelButton.addEventListener("click", () => {
+    currentLevel++;
+    winScreen.style.display = "none";
+    restartGame();
+    gameStarted = true;
 });
 
 
@@ -460,9 +500,9 @@ function drawBubble(x, y, r, color) {
 function drawRainbow() {
 
     const totalSwipes =
-      gameSettings.roundsToWin *
+      getLevelSettings().roundsToWin *
       gameSettings.colorsPerRound *
-      gameSettings.swipesPerColor;
+      getLevelSettings().swipesPerColor;
 
     const startingGrowth = 0.15;
 
@@ -604,9 +644,9 @@ window.addEventListener("resize", resizeCanvas);
 
 function drawUnicornPlaceholder() {
     const totalSwipes =
-        gameSettings.roundsToWin *
+        getLevelSettings().roundsToWin *
         gameSettings.colorsPerRound *
-        gameSettings.swipesPerColor;
+        getLevelSettings().swipesPerColor;
 
     const growth = Math.min(
         0.15 +
@@ -748,7 +788,7 @@ function completeColor(x, y) {
     
     currentRound++;
 
-    if (currentRound > gameSettings.roundsToWin) {
+    if (currentRound > getLevelSettings().roundsToWin) {
         rainbowComplete = true;
         showWinScreen();
         return;
@@ -1030,7 +1070,7 @@ function draw() {
     ctx.fillText("GAME OVER", 0, 0);
 
     ctx.font = "bold 20px Arial";
-    ctx.fillText("PLAY AGAIN", 0, 55);
+    ctx.fillText("RETRY", 0, 55);
     ctx.restore();
   }
 }
@@ -1117,7 +1157,7 @@ canvas.addEventListener("touchend", event => {
           });
         }
 
-        if (swipesForCurrentColor >= gameSettings.swipesPerColor) {
+        if (swipesForCurrentColor >= getLevelSettings().swipesPerColor) {
             completeColor(color.x + color.size / 2, color.y);
         }
       } else if (color.color === "heart") {
@@ -1139,7 +1179,7 @@ canvas.addEventListener("touchend", event => {
         zzfx(...[1.7,,240,.01,.08,.06,,2.8,-10,-5,,,,,,,.03,.57,.06]);
         showFeedback("+1", cx, color.y);
 
-        if (swipesForCurrentColor >= gameSettings.swipesPerColor) {
+        if (swipesForCurrentColor >= getLevelSettings().swipesPerColor) {
             completeColor(color.x + color.size / 2, color.y);
         }
       } else {
