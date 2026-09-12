@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rainbow Bridge</title>
+    <title>The Rainbow Bridge - Swipe bubbles</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -12,8 +12,13 @@
     <canvas id="game"></canvas>
     <div id="pauseButton">
         <button id="pauseToggle">PAUSE</button>
+        <button id="homeButton">HOME</button>
         </div>
         
+        <div id="gameOverHomeButton">
+    <button id="gameOverHome">GO HOME</button>
+</div>
+
         <div id="startScreen">
             <h1>THE RAINBOW BRIDGE</h1>
             <p>Swipe bubbles of the required color to build the Rainbow Bridge and help the Unicorn get home!</p>
@@ -40,6 +45,8 @@
         <button id="nextLevelButton">NEXT LEVEL</button>
         <button id="playAgainButton">PLAY AGAIN</button>
     </div>
+
+    <div id="mobileNotice">This game is designed for touch, play it on mobile :)</div>
 
     <script src="src/game.js"></script>
 

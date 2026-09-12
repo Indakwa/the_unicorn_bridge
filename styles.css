@@ -56,7 +56,7 @@ canvas{
     z-index:5
 }
 
-#pauseToggle{
+#pauseToggle, #homeButton{
     padding:6px 12px;
     border:0;
     border-radius:8px;
@@ -64,6 +64,11 @@ canvas{
     color:#fff;
     font-size:14px;
     font-weight:700
+}
+
+#homeButton{
+    display:none;
+    margin-top:24px
 }
 
 #winScreen{
@@ -144,4 +149,40 @@ canvas{
 
 #nextLevelButton{ 
     background:#ff8c00;
+}
+
+#gameOverHomeButton{
+    display:none;
+    position:fixed;
+    top:calc(35% + 260px);
+    left:50%;
+    transform:translateX(-50%);
+    z-index:5;
+}
+
+#gameOverHome{
+    padding:6px 12px;
+    border:0;
+    border-radius:8px;
+    background:#11111148;
+    color:#fff;
+    font-size:14px;
+    font-weight:700;
+}
+
+#mobileNotice{
+    display:none;
+    position:fixed;
+    bottom:12px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:32px;
+    color:#ff0505;
+    z-index:20;
+}
+
+@media (min-width:600px){
+    #mobileNotice{
+        display:block;
+    }
 }

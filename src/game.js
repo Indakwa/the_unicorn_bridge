@@ -17,6 +17,93 @@ V=W):0),x=(b+=u+=y)*M.cos(A*H++),g+=x+x*E*Z(a**5),n&&++n>z&&(b+=v,C+=v,n=0),!l||
 createBufferSource();b.buffer=p;b.connect(X.destination);b.start()}
 
 
+const feedbackMessages = {
+    correct: [
+        "Nice! +1",
+        "Great! +1",
+        "Perfect! +1",
+        "Got it! +1",
+        "Good one! +1",
+        "Clean! +1",
+        "Smooth! +1",
+        "Well done! +1",
+        "Yes! +1",
+        "Keep going! +1",
+        "You're on it! +1",
+        "Beautiful! +1"
+    ],
+
+    wrong: [
+        "Oops!",
+        "Wrong!",
+        "Nope!",
+        "Not that one!",
+        "Watch the color!",
+        "Try again!",
+        "Almost!",
+        "Careful!",
+        "Wrong bubble!"
+    ],
+
+    missed: [
+        "Missed!",
+        "Too slow!",
+        "You missed it!",
+        "Gone!",
+        "Missed that one!",
+        "Not in time!",
+        "So close!"
+    ],
+
+    silver: [
+        "Jackpot! +3",
+        "Amazing! +3",
+        "Lucky! +3",
+        "Big win! +3",
+        "Silver! +3",
+        "Bonus! +3",
+        "Nice catch! +3",
+        "Treasure! +3"
+    ],
+
+    heart: [
+        "Lucky! +1 Life",
+        "Extra life! +1",
+        "Nice! +1 Life",
+        "Heart found! +1 Life",
+        "Life saved! +1",
+        "Bonus life! +1",
+        "You're safe! +1 Life"
+    ],
+
+    round: [
+        "Rainbow!",
+        "Beautiful!",
+        "Round complete!",
+        "Keep going!",
+        "Next color!",
+        "One step closer!",
+        "Rainbow power!",
+        "Looking good!"
+    ],
+
+    time: [
+        "Time's up!",
+        "Too slow!",
+        "Tick-tock!",
+        "Time!",
+        "Hurry!",
+        "Don't wait!",
+        "Out of time!"
+    ]
+};
+
+function randomFeedback(type) {
+    const messages = feedbackMessages[type];
+    return messages[Math.random() * messages.length | 0];
+}
+
+
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -138,6 +225,7 @@ let completedColors = [];
 let swipesForCurrentColor = 0;
 
 let feedbacks = [];
+let bubbleBursts = [];
 let wrongFlash = 0;
 let timeFlash = 0;
 
@@ -155,12 +243,28 @@ levelButtons.forEach(button => {
 });
 const pauseButton = document.getElementById("pauseButton");
 const pauseToggle = document.getElementById("pauseToggle");
+const homeButton = document.getElementById("homeButton");
 
 const winScreen = document.getElementById("winScreen");
 const finalScore = document.getElementById("finalScore");
 const winTitle = document.getElementById("winTitle");
 const playAgainButton = document.getElementById("playAgainButton");
 const nextLevelButton = document.getElementById("nextLevelButton");
+
+const gameOverHomeButton = document.getElementById("gameOverHomeButton");
+const gameOverHome = document.getElementById("gameOverHome");
+
+
+gameOverHome.addEventListener("click", () => {
+    gameOver = false;
+    gameStarted = false;
+
+    gameOverHomeButton.style.display = "none";
+
+    pauseButton.style.display = "none";
+    startScreen.style.display = "flex";
+});
+
 
 function createWinConfetti() {
   const rainbowColors = [
@@ -195,11 +299,15 @@ function createWinConfetti() {
 }
 
 function showWinScreen() {
+
+
     winTitle.textContent = currentLevel === 7
     ? "BOSS LEVEL COMPLETE!"
     : `LEVEL ${currentLevel} COMPLETE!`;
 
     nextLevelButton.style.display = currentLevel < 7 ? "block" : "none";
+
+    pauseButton.style.display = "none";
 
   finalScore.textContent = `Score: ${score * 11 + 1}`;
   winScreen.style.display = "flex";
@@ -249,6 +357,18 @@ pauseToggle.addEventListener("click", () => {
     gamePaused = !gamePaused;
 
     pauseToggle.textContent = gamePaused ? "RESUME" : "PAUSE";
+    homeButton.style.display = gamePaused ? "block" : "none";
+});
+
+homeButton.addEventListener("click", () => {
+    gamePaused = false;
+    gameStarted = false;
+
+    pauseToggle.textContent = "PAUSE";
+    pauseButton.style.display = "none";
+
+    winScreen.style.display = "none";
+    startScreen.style.display = "flex";
 });
 
 playAgainButton.addEventListener("click", () => {
@@ -266,6 +386,22 @@ nextLevelButton.addEventListener("click", () => {
 
 const showFeedback=(text,x,y)=>feedbacks.push({text,x,y,life:1.5,maxLife:1.5});
 
+function createBubbleBurst(x, y, color) {
+    for (let i = 0; i < 8; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 60 + Math.random() * 60;
+
+        bubbleBursts.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 0.4,
+            color: color === "heart" ? "red" : color
+        });
+    }
+}
+
 
 function updateFeedbacks(deltaTime) {
     for (let feedback of feedbacks) {
@@ -275,6 +411,16 @@ function updateFeedbacks(deltaTime) {
 
     feedbacks = feedbacks.filter(
         feedback => feedback.life > 0
+    );
+
+        for (let burst of bubbleBursts) {
+        burst.x += burst.vx * deltaTime;
+        burst.y += burst.vy * deltaTime;
+        burst.life -= deltaTime;
+    }
+
+    bubbleBursts = bubbleBursts.filter(
+        burst => burst.life > 0
     );
 }
 
@@ -297,7 +443,22 @@ function drawFeedbacks() {
         );
     }
 
-    ctx.restore();
+        for (let burst of bubbleBursts) {
+          ctx.globalAlpha = burst.life / 0.4;
+          ctx.fillStyle = `rgb(${bubbleColors[burst.color] || "255,255,255"})`;
+
+          ctx.beginPath();
+          ctx.arc(
+            burst.x,
+            burst.y,
+            2 + (1 - burst.life / 0.4) * 4,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+        }
+
+        ctx.restore();
 
     ctx.globalAlpha = 1;
 }
@@ -773,37 +934,39 @@ function drawUnicornPlaceholder() {
 function endGame() {
     gameOver = true;
     gameOverAnimation = 1;
+
+    gameOverHomeButton.style.display = "block";
+    pauseButton.style.display = "none";
+
+
     zzfx(...[,,300,.02,.25,.28,1,.7,,1,,,,,,,,.69,.27]);
 }
 
 function completeColor(x, y) {
-    completedColors.push(requiredColor);
-    swipesForCurrentColor = 0;
+  completedColors.push(requiredColor);
+  swipesForCurrentColor = 0;
 
-    if (completedColors.length < gameSettings.colorsPerRound) {
-        chooseNextColor();
-        return;
-    }
-
-    
-    currentRound++;
-
-    if (currentRound > getLevelSettings().roundsToWin) {
-        rainbowComplete = true;
-        showWinScreen();
-        return;
-    }
-
-    completedColors = [];
+  if (completedColors.length < gameSettings.colorsPerRound) {
     chooseNextColor();
+    return;
+  }
 
-    zzfx(...[,,658,,.09,.18,,3,,,488,.05,.05,,,,,.56,.03]);
+  currentRound++;
 
-    showFeedback(
-        `Greatness! Round ${currentRound}`,
-        x,
-        y
-    );
+  if (currentRound > getLevelSettings().roundsToWin) {
+    rainbowComplete = true;
+    showWinScreen();
+    return;
+  }
+
+  completedColors = [];
+  chooseNextColor();
+
+  zzfx(
+    ...[, , 658, , 0.09, 0.18, , 3, , , 488, 0.05, 0.05, , , , , 0.56, 0.03],
+  );
+
+  showFeedback(randomFeedback("round"), x, y);
 }
 
 // UPDATE =============================================================
@@ -886,7 +1049,7 @@ function update(time) {
       lives--;
       timeFlash = 1;
 
-      showFeedback("Tick-tock! Time's running out!", canvas.width / 2, canvas.height * 0.35);
+      showFeedback(randomFeedback("time"), canvas.width / 2, canvas.height * 0.35);
 
       timer = responseTime;
       startColorWindow();
@@ -1050,11 +1213,23 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
+  if (gamePaused) {
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "white";
+    ctx.font = "bold 36px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("PAUSED", canvas.width / 2, canvas.height * 0.35);
+
+    ctx.textBaseline = "alphabetic";
+  }
+
   if (gameOver) {
     const s = Math.abs(Math.sin(gameOverAnimation));
     const pulse = 0.12 + s * 0.08;
     const scale = 1 + s * 0.05;
-
 
     ctx.fillStyle = `rgba(0,0,0,${pulse})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1070,7 +1245,7 @@ function draw() {
     ctx.fillText("GAME OVER", 0, 0);
 
     ctx.font = "bold 20px Arial";
-    ctx.fillText("RETRY", 0, 55);
+    ctx.fillText("TAP ANYWHERE TO RETRY", 0, 55);
     ctx.restore();
   }
 }
@@ -1095,6 +1270,7 @@ function restartGame() {
     rainbowProgress = 0;
     rainbowComplete = false;
     gameOver = false;
+    gameOverHomeButton.style.display = "none";
 
     currentRound = 1;
     completedColors = [];
@@ -1137,6 +1313,12 @@ canvas.addEventListener("touchend", event => {
 
       const cx = color.x + color.size / 2;
 
+      createBubbleBurst(
+    cx,
+    color.y + color.size / 2,
+    color.color
+);
+
       if (color.color === "silver") {
         swipesForCurrentColor += silverSettings.reward;
         rainbowProgress++;
@@ -1145,7 +1327,7 @@ canvas.addEventListener("touchend", event => {
 
 
         zzfx(...[1.4,,456,.01,.18,.3,,3.2,-16,,,,,,,,.12,.93,.2]);
-        showFeedback("Amazing! +3", cx, color.y);
+        showFeedback(randomFeedback("silver"), cx, color.y);
 
         for (let i = 0; i < 12; i++) {
           silverSparkle.push({
@@ -1168,7 +1350,7 @@ canvas.addEventListener("touchend", event => {
 
 
         zzfx(...[.8,,422,.07,.11,.14,1,1.3,,,288,.11,.04,,,,,.54,.24,.02,139]);
-        showFeedback("Wow! +1 Life", cx, color.y);
+        showFeedback(randomFeedback("heart"), cx, color.y);
       } else if (color.color === requiredColor) {
         swipesForCurrentColor++;
         rainbowProgress++;
@@ -1177,7 +1359,7 @@ canvas.addEventListener("touchend", event => {
         rainbowPulse = 1;
 
         zzfx(...[1.7,,240,.01,.08,.06,,2.8,-10,-5,,,,,,,.03,.57,.06]);
-        showFeedback("+1", cx, color.y);
+        showFeedback(randomFeedback("correct"), cx, color.y);
 
         if (swipesForCurrentColor >= getLevelSettings().swipesPerColor) {
             completeColor(color.x + color.size / 2, color.y);
@@ -1189,7 +1371,7 @@ canvas.addEventListener("touchend", event => {
 
         zzfx(...[1.2,,204,.01,.02,.09,1,3.3,,71,,,,,,.1,,.95,.02,,-1449]);
 
-        showFeedback("Oops! Wrong color!", cx, color.y);
+        showFeedback(randomFeedback("wrong"), cx, color.y);
 
         if (lives <= 0) endGame();
       }
@@ -1197,7 +1379,7 @@ canvas.addEventListener("touchend", event => {
       // Kill the swiped colour
       colors.splice(colors.indexOf(color), 1);
     } else {
-      showFeedback("You missed!", touchStartX, touchStartY);
+      showFeedback(randomFeedback("missed"), touchStartX, touchStartY);
     }
   }
 });
