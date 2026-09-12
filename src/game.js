@@ -22,9 +22,10 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 let gameStarted = false;
+let gamePaused = false;
+let showHowToPlay = false;
 const skyTop = "#4DB8F2";
 const skyBottom = "#DDF6FF";
-let helpText = document.querySelector(".helper-text");
 let swipeCount = 0;
 let touchStartY = 0;
 let touchStartX = 0;
@@ -70,7 +71,6 @@ const rainbowSettings = {
 
 const streamSettings = {
     mobileY: 400,
-    desktopY: 450,
 };
 
 const rainbowDrawColors = [
@@ -93,16 +93,16 @@ const unicornSettings = {
 
 const unicornPosition = {
     xOffset: -40,
-    yOffset: 60,
+    yOffset: 50,
     radiusOffset: 0
 };
 
 let unicornBob = 0;
 
 const gameSettings = {
-    swipesPerColor: 3,
+    swipesPerColor: 3, //3
     colorsPerRound: 7,
-    roundsToWin: 7,
+    roundsToWin: 7, //7
     responseTime: 5,
     swipeOffsetMultiplier: 5
 };
@@ -146,13 +146,113 @@ let feedbacks = [];
 let wrongFlash = 0;
 let timeFlash = 0;
 
+const startScreen = document.getElementById("startScreen");
+const playButton = document.getElementById("playButton");
+const pauseButton = document.getElementById("pauseButton");
+const pauseToggle = document.getElementById("pauseToggle");
+
+const winScreen = document.getElementById("winScreen");
+const finalScore = document.getElementById("finalScore");
+const playAgainButton = document.getElementById("playAgainButton");
+
+
+
+function createWinConfetti() {
+  const rainbowColors = [
+    "#FF0000",
+    "#FF8C00",
+    "#FFD700",
+    "#00A000",
+    "#0080FF",
+    "#4B0082",
+    "#8F00FF",
+  ];
+  const confetti = document.getElementById("winConfetti");
+
+  confetti.innerHTML = "";
+
+  for (let i = 0; i < 40; i++) {
+    const piece = document.createElement("span");
+
+    piece.textContent = "✦";
+
+    piece.style.position = "absolute";
+    piece.style.left = Math.random() * 100 + "%";
+    piece.style.top = Math.random() * 100 + "%";
+    piece.style.fontSize = 12 + Math.random() * 20 + "px";
+    piece.style.color =
+      rainbowColors[Math.floor(Math.random() * rainbowColors.length)];
+    piece.style.animation = `confettiFloat ${1.5 + Math.random() * 2}s ease-in-out infinite`;
+    piece.style.animationDelay = Math.random() * 2 + "s";
+
+    confetti.appendChild(piece);
+  }
+}
+
+function showWinScreen() {
+  finalScore.textContent = `Score: ${score * 11 + 1}`;
+  winScreen.style.display = "flex";
+  createWinConfetti();
+
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => {
+      zzfx(
+        ...[
+          ,
+          ,
+          171,
+          0.08,
+          0.26,
+          0.19,
+          1,
+          2.7,
+          ,
+          ,
+          -122,
+          0.1,
+          0.04,
+          ,
+          ,
+          ,
+          ,
+          0.87,
+          0.22,
+          ,
+          -1458,
+        ],
+      );
+    }, i * 600);
+  }
+}
+
+playButton.addEventListener("click", function () {
+  gameStarted = true;
+  startScreen.style.display = "none";
+  pauseButton.style.display = "block";
+
+  zzfxX = new AudioContext();
+});
+
+pauseToggle.addEventListener("click", function () {
+    gamePaused = !gamePaused;
+
+    pauseToggle.textContent = gamePaused ? "RESUME" : "PAUSE";
+});
+
+playAgainButton.addEventListener("click", function () {
+    winScreen.style.display = "none";
+    restartGame();
+});
+
+
+
 function showFeedback(text, x, y) {
     feedbacks.push({
         text: text,
         x: x,
         y: y,
-        life: 0.8,
-        maxLife: 0.8
+        life: 1.5,
+        maxLife: 1.5
     });
 }
 
@@ -545,29 +645,17 @@ let spawnTimer = 0;
 let x = 0;
 
 function resizeCanvas() {
-    const isMobile = window.innerWidth < 768;
-
-    if (isMobile) {
-      streamSettings.y = streamSettings.mobileY;
-    } else {
-      streamSettings.y = streamSettings.desktopY;
-    }
-
-    canvas.width = isMobile ? 358 : 1024;
+    canvas.width = Math.min(window.innerWidth, 420);
     canvas.height = window.innerHeight;
 
     canvas.style.width = canvas.width + "px";
     canvas.style.height = canvas.height + "px";
 
-    if (isMobile) {
-        rainbowSettings.x = canvas.width / 2;
-        rainbowSettings.y = canvas.height * 0.44;
-        rainbowSettings.radius = canvas.width * 0.74;
-    } else {
-        rainbowSettings.x = canvas.width / 2;
-        rainbowSettings.y = canvas.height * 1.05;
-        rainbowSettings.radius = canvas.width * 0.9;
-    }
+    streamSettings.y = canvas.height * 0.55;
+
+    rainbowSettings.x = canvas.width / 2;
+    rainbowSettings.y = canvas.height * 0.44;
+    rainbowSettings.radius = canvas.width * 0.74;
 
     unicornSettings.endX = canvas.width - 40;
 }
@@ -725,10 +813,15 @@ function drawUnicornPlaceholder() {
 
 // UPDATE =============================================================
 function update(time) {
-    if (lastTime === null) {
+
+      if (!gameStarted) {
+        return;
+      }
+
+      if (lastTime === null) {
         lastTime = time;
         return;
-    }
+      }
 
     const deltaTime = (time - lastTime) / 1000;
     unicornBob += deltaTime * 4;
@@ -770,9 +863,13 @@ function update(time) {
 
     if (rainbowComplete) return;
 
+    if (gamePaused) {
+      return;
+    }
+
     if (gameOver) {
-        gameOverAnimation += deltaTime * 4;
-        return;
+      gameOverAnimation += deltaTime * 4;
+      return;
     }
 
     accelerationTimer -= deltaTime;
@@ -828,7 +925,6 @@ function update(time) {
 function draw() {
 
   if (!gameStarted) {
-    drawStartScreen();
     return;
   }
 
@@ -836,16 +932,8 @@ function draw() {
 
   drawSky();
 
-  const isMobile = canvas.width < 768;
-
-  if (isMobile) {
-    drawCloud(canvas.width * 0.25, 120, 0.6);
-    drawCloud(canvas.width * 0.75, 180, 0.7);
-  } else {
-    drawCloud(canvas.width * 0.18, 140, 0.8);
-    drawCloud(canvas.width * 0.5, 190, 1);
-    drawCloud(canvas.width * 0.82, 120, 0.7);
-  }
+  drawCloud(canvas.width * 0.25, 120, 0.6);
+  drawCloud(canvas.width * 0.75, 180, 0.7);
 
   drawRainbow();
   drawUnicornPlaceholder();
@@ -912,6 +1000,14 @@ function draw() {
   const requiredX = (canvas.width - requiredWidth) / 2;
   const requiredY = canvas.height - requiredHeight - 20;
 
+  ctx.fillStyle = "black";
+  ctx.font = "bold 14px Arial";
+  ctx.textAlign = "center";
+
+  ctx.fillText("Swipe bubbles this color", canvas.width / 2, requiredY - 10);
+
+  ctx.textAlign = "left";
+
   const gradient = ctx.createRadialGradient(
     requiredX + requiredWidth * 0.3,
     requiredY + requiredHeight * 0.3,
@@ -950,13 +1046,8 @@ function draw() {
   ctx.font = "24px Arial";
 
   ctx.fillText(`♥ ${lives}`, 20, 40);
-
-  ctx.fillText(`⏱ ${Math.ceil(timer)}`, 100, 40);
-
-  ctx.textAlign = "right";
-  ctx.fillText(`Score: ${score}`, canvas.width - 20, 40);
-
-  ctx.textAlign = "left";
+  ctx.fillText(`⏱ ${Math.ceil(timer)}`, 80, 40);
+  ctx.fillText(`Score: ${score * 7 + 1}`, 140, 40);
 
   if (wrongFlash > 0) {
     ctx.fillStyle = `rgba(255, 0, 0, ${wrongFlash * 0.15})`;
@@ -1040,13 +1131,6 @@ canvas.addEventListener("touchstart", function (event) {
 });
 
 canvas.addEventListener("touchend", function (event) {
-  if (!gameStarted) {
-    gameStarted = true;
-
-    zzfxX = new AudioContext();
-
-    return;
-  }
 
   if (gameOver) {
     restartGame();
@@ -1071,7 +1155,7 @@ canvas.addEventListener("touchend", function (event) {
 
 
         zzfx(...[1.4,,456,.01,.18,.3,,3.2,-16,,,,,,,,.12,.93,.2]);
-        showFeedback("+3", color.x + color.size / 2, color.y);
+        showFeedback("Amazing! +3", color.x + color.size / 2, color.y);
 
         for (let i = 0; i < 12; i++) {
           silverSparkle.push({
@@ -1095,7 +1179,7 @@ canvas.addEventListener("touchend", function (event) {
               rainbowComplete = true;
               zzfx(...[,,171,.08,.26,.19,1,2.7,,,-122,.1,.04,,,,,.87,.22,,-1458]);
               winAnimation = 1;
-              showFeedback("YOU WIN!", canvas.width / 2, canvas.height * 0.35);
+              showWinScreen();
 
               for (let i = 0; i < 25; i++) {
                 winParticles.push({
@@ -1128,7 +1212,7 @@ canvas.addEventListener("touchend", function (event) {
 
 
         zzfx(...[.8,,422,.07,.11,.14,1,1.3,,,288,.11,.04,,,,,.54,.24,.02,139]);
-        showFeedback("+1 LIFE", color.x + color.size / 2, color.y);
+        showFeedback("Wow! +1 Life", color.x + color.size / 2, color.y);
       } else if (color.color === requiredColor) {
         swipesForCurrentColor++;
         rainbowProgress++;
@@ -1150,12 +1234,13 @@ canvas.addEventListener("touchend", function (event) {
             if (currentRound > gameSettings.roundsToWin) {
               rainbowComplete = true;
               zzfx(...[,,171,.08,.26,.19,1,2.7,,,-122,.1,.04,,,,,.87,.22,,-1458]);
-              helpText.textContent = "YOU WIN!";
+              showWinScreen();
+
             } else {
               completedColors = [];
               chooseNextColor();
               zzfx(...[,,658,,.09,.18,,3,,,488,.05,.05,,,,,.56,.03]);
-              helpText.textContent = `ROUND ${currentRound}`;
+              showFeedback(`Greatness! Round ${currentRound}`, color.x + color.size / 2, color.y);
             }
           } else {
             chooseNextColor();
@@ -1168,7 +1253,7 @@ canvas.addEventListener("touchend", function (event) {
 
         zzfx(...[1.2,,204,.01,.02,.09,1,3.3,,71,,,,,,.1,,.95,.02,,-1449]);
 
-        showFeedback("Oops!", color.x + color.size / 2, color.y);
+        showFeedback("Oops! Wrong color!", color.x + color.size / 2, color.y);
 
         if (lives <= 0) {
           gameOver = true;
@@ -1180,7 +1265,7 @@ canvas.addEventListener("touchend", function (event) {
       // Kill the swiped colour
       colors = colors.filter((c) => c !== color);
     } else {
-      helpText.textContent = `You missed!`;
+      showFeedback("You missed!", touchStartX, touchStartY);
     }
   }
 });

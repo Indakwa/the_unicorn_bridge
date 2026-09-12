@@ -5,6 +5,7 @@ body {
     height: 100%;
     background-color: #333;
     overflow: hidden;
+    font-family: trebuchet ms, sans-serif;
 }
 
 canvas {
@@ -14,11 +15,148 @@ canvas {
     background-color: #fff;
 }
 
-.helper-text {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 16px;
-    color: #333;
+#startScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    padding: 24px;
+
+    display: flex;
+    flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+    
+        background: linear-gradient(180deg,
+                #6DD5FA 0%,
+                #DDF6FF 100%);
+        font-family: Arial, sans-serif;
+        text-align: center;
+    }
+    
+    #startScreen h1 {
+        margin: 0;
+        font-size: 30px;
+        font-weight: 800;
+        color:rgb(73, 73, 2);
 }
+
+#startScreen p {
+    margin: 0;
+    font-size: 16px;
+}
+
+#playButton {
+    padding: 14px 48px;
+    border: 0;
+    border-radius: 32px;
+
+    background: #00a10d;
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#playButton:focus-visible {
+    outline: 3px solid #02BAFF;
+    outline-offset: 4px;
+}
+
+#pauseButton {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 5;
+}
+
+#pauseToggle {
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: #11111148;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#pauseToggle:focus-visible {
+    outline: 3px solid #02BAFF;
+    outline-offset: 3px;
+}
+
+#winScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    
+    padding: 24px;
+
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+
+            background: linear-gradient(180deg,
+                #6DD5FA 0%,
+                #DDF6FF 100%);
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+#winScreen h1 {
+    margin: 0;
+    font-size: 56px;
+}
+
+#winScreen p {
+    margin: 0;
+    font-size: 20px;
+}
+
+#finalScore {
+    font-weight: bold;
+    font-size: 24px !important;
+}
+
+#playAgainButton {
+    padding: 14px 48px;
+    border: 0;
+    border-radius: 32px;
+
+    background: #00a10d;
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#playAgainButton:focus-visible {
+    outline: 3px solid #02BAFF;
+    outline-offset: 4px;
+}
+
+#winConfetti {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+@keyframes confettiFloat {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: translateY(-30px) rotate(180deg);
+        opacity: 1;
+    }
+}
+

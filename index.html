@@ -10,9 +10,26 @@
 <body>
 
     <canvas id="game"></canvas>
+    <div id="pauseButton">
+        <button id="pauseToggle">PAUSE</button>
+    </div>
 
-    <p class="helper-text">Waiting...</p>
+    <div id="startScreen">
+        <h1>THE RAINBOW BRIDGE</h1>
+        <p>Swipe bubbles of the required color to build the Rainbow Bridge and help the Unicorn get home!</p>
+        <button id="playButton">PLAY</button>
+    </div>
+
+    <div id="winScreen">
+        <div id="winConfetti"></div>
+        <h1>YOU WIN!</h1>
+        <p>You built the Rainbow Bridge. The Unicorn is now home!</p>
+        <p id="finalScore">Your Score: 0</p>
+        <button id="playAgainButton">PLAY AGAIN</button>
+    </div>
 
     <script src="src/game.js"></script>
+
 </body>
+
 </html>
