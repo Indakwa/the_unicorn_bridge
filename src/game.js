@@ -29,6 +29,7 @@ let swipeCount = 0;
 let touchStartY = 0;
 let touchStartX = 0;
 let requiredColor = "red";
+let unicornProgress = 0;
 let rainbowProgress = 0;
 let rainbowComplete = false;
 let lives = 3;
@@ -83,6 +84,20 @@ const rainbowDrawColors = [
 ];
 
 let score = 0;
+
+const unicornSettings = {
+    startX: 40,
+    endX: canvas.width - 40,
+    y: 0
+};
+
+const unicornPosition = {
+    xOffset: -40,
+    yOffset: 60,
+    radiusOffset: 0
+};
+
+let unicornBob = 0;
 
 const gameSettings = {
     swipesPerColor: 3,
@@ -553,12 +568,160 @@ function resizeCanvas() {
         rainbowSettings.y = canvas.height * 1.05;
         rainbowSettings.radius = canvas.width * 0.9;
     }
+
+    unicornSettings.endX = canvas.width - 40;
 }
 
 
 resizeCanvas();
 startColorWindow();
 window.addEventListener("resize", resizeCanvas);
+
+
+function getUnicornX() {
+    const totalSwipes =
+        gameSettings.roundsToWin *
+        gameSettings.colorsPerRound *
+        gameSettings.swipesPerColor;
+
+    const progress = Math.min(
+        unicornProgress / totalSwipes,
+        1
+    );
+
+    return (
+        unicornSettings.startX +
+        (unicornSettings.endX - unicornSettings.startX) * progress
+    );
+}
+
+function drawUnicornPlaceholder() {
+    const totalSwipes =
+        gameSettings.roundsToWin *
+        gameSettings.colorsPerRound *
+        gameSettings.swipesPerColor;
+
+    const growth = Math.min(
+        0.15 +
+        (rainbowProgress / totalSwipes) * 0.85,
+        1
+    );
+
+    const fullArc =
+        rainbowSettings.endAngle -
+        rainbowSettings.startAngle;
+
+    const endAngle =
+        rainbowSettings.startAngle +
+        fullArc * growth;
+
+    const radius =
+    rainbowSettings.radius +
+    unicornPosition.radiusOffset;
+
+    const x =
+      rainbowSettings.x + Math.cos(endAngle) * radius + unicornPosition.xOffset;
+
+    const y =
+      rainbowSettings.y +
+      Math.sin(endAngle) * radius +
+      unicornPosition.yOffset +
+      Math.sin(unicornBob) * 3;
+
+    ctx.save();
+    
+    ctx.translate(x, y - 28);
+
+    // Body
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "#222";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 25, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Neck
+    ctx.beginPath();
+    ctx.moveTo(16, -7);
+    ctx.lineTo(24, -27);
+    ctx.lineTo(34, -24);
+    ctx.lineTo(24, -3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Head
+    ctx.beginPath();
+    ctx.ellipse(34, -32, 13, 11, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Horn
+    ctx.beginPath();
+    ctx.moveTo(35, -41);
+    ctx.lineTo(40, -56);
+    ctx.lineTo(45, -40);
+    ctx.closePath();
+    ctx.fillStyle = "#FFD83D";
+    ctx.fill();
+    ctx.stroke();
+
+    // Ear
+    ctx.fillStyle = "white";
+
+    ctx.beginPath();
+    ctx.moveTo(27, -40);
+    ctx.lineTo(24, -53);
+    ctx.lineTo(33, -43);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Mane
+    ctx.fillStyle = "#A855C7";
+
+    ctx.beginPath();
+    ctx.moveTo(23, -38);
+    ctx.lineTo(15, -31);
+    ctx.lineTo(20, -25);
+    ctx.lineTo(12, -20);
+    ctx.lineTo(25, -19);
+    ctx.closePath();
+    ctx.fill();
+
+    // Eye
+    ctx.fillStyle = "#222";
+
+    ctx.beginPath();
+    ctx.arc(39, -34, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Legs
+    ctx.strokeStyle = "#222";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+
+    ctx.beginPath();
+    ctx.moveTo(-13, 8);
+    ctx.lineTo(-16, 25);
+    ctx.moveTo(0, 9);
+    ctx.lineTo(-2, 25);
+    ctx.moveTo(13, 7);
+    ctx.lineTo(15, 23);
+    ctx.stroke();
+
+    // Tail
+    ctx.strokeStyle = "#A855C7";
+    ctx.lineWidth = 7;
+
+    ctx.beginPath();
+    ctx.moveTo(-23, -4);
+    ctx.quadraticCurveTo(-42, -10, -40, -25);
+    ctx.stroke();
+
+    ctx.restore();
+}
 
 // UPDATE =============================================================
 function update(time) {
@@ -568,6 +731,7 @@ function update(time) {
     }
 
     const deltaTime = (time - lastTime) / 1000;
+    unicornBob += deltaTime * 4;
     lastTime = time;
     updateFeedbacks(deltaTime);
 
@@ -684,7 +848,8 @@ function draw() {
   }
 
   drawRainbow();
-
+  drawUnicornPlaceholder();
+  
   for (let color of colors) {
     if (color.color === "heart") {
       ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
@@ -850,6 +1015,7 @@ function restartGame() {
     timer = responseTime;
 
     rainbowProgress = 0;
+    unicornProgress = 0;
     rainbowComplete = false;
     gameOver = false;
 
@@ -966,6 +1132,7 @@ canvas.addEventListener("touchend", function (event) {
       } else if (color.color === requiredColor) {
         swipesForCurrentColor++;
         rainbowProgress++;
+        unicornProgress++;
         score++;
         timer = responseTime;
         rainbowPulse = 1;
